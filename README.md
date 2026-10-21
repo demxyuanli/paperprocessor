@@ -140,6 +140,7 @@ exports/
 | `paper_export` | 导出 HTML/DOCX/PDF，产物绑定版本；`watch:true` 监听 DOCX，默认空闲 5 分钟后合并提交 |
 | `paper_sync_docx` | 立即把 watch 的待同步 Word 保存写成版本；`manual` 模式的检查点 |
 | `paper_import_docx` | 把编辑过的 Word 转回 Markdown，预览 diff 后写成 `docx_import` 新版本 |
+| `paper_unwatch_docx` | 停止监听 Word 文件；有 pending 时先 `paper_sync_docx` |
 
 ### 写入示例
 
@@ -364,7 +365,7 @@ dsh plugin --profile <name> add D:/source/repos/paperharness
 - **演化树**：主线/分支按层级缩进，分支显示来源版本与时间。
 - **diff**：保留行号、增删底色和 +/- 统计。
 
-所有论文——主线与分支——共用同一套版本、审计、导出与恢复流程。面板通过同源的 `/paper/list`、`/paper/insights`、`/paper/check`、`/paper/history`、`/paper/diff`、`/paper/graph`、`/paper/compare`、`/paper/action` 访问宿主，不额外启动服务。写操作（导出、恢复、分叉、改阶段、改简报）要求当前会话的 cwd，避免把产物写进应用数据目录。
+所有论文——主线与分支——共用同一套版本、审计、导出与恢复流程。面板通过同源的 `/paper/list`、`/paper/insights`、`/paper/check`、`/paper/history`、`/paper/diff`、`/paper/graph`、`/paper/compare`、`/paper/watches`、`/paper/action` 访问宿主，不额外启动服务。写操作（导出、恢复、分叉、改阶段、改简报）要求当前会话的 cwd，避免把产物写进应用数据目录。
 
 ### 交互设计参考
 
@@ -458,6 +459,8 @@ updatedAt: 2026-10-19T00:00:00.000Z
 - DOCX 目录是静态列表（无页码）；HTML/PDF 目录是链接。Word 中如需页码目录，可在 Word 里插入自动目录域。
 - PDF 样式来自 HTML，和 DOCX 的排版不会逐像素一致。
 - Word 回写只保证标题/段落/列表/基础表格/图片的基本转换；批注、修订痕迹、复杂公式、文本框、页眉页脚不会完整保留，导入前必须看 preview diff。
+- watch 的 pending 状态只在内存中：DSH 重启或进程退出会丢失未同步保存；关闭 Word 前先执行 `/paper sync <doc>`（或概览里的“立即同步”）。
+- 同一篇论文只保留一个 watcher；重新导出并 watch 会替换旧 watcher。自动回写没有二次确认，冲突时会停在 `conflict`，建议重要修改仍先看版本 diff。
 
 ## 开发
 
@@ -474,7 +477,7 @@ npm test
 - `test/import.test.mjs`：Word→Markdown 预览、确认、基础版本冲突与 force 回写。
 - `test/watch.test.mjs`：DOCX 监听、频繁保存合并、手动检查点、冲突不覆盖。
 - `test/integration.test.mjs`：插件注册、工具输出 schema、守卫、命令、skill、系统提示词、Word 导入工具。
-- `test/web.test.mjs`：审计面板的同源 HTTP API（列表、概览、写作清单、历史、diff、版本图、跨论文对比、导出、恢复、分叉、阶段/简报/状态更新、startTurn、写路径校验）。
+- `test/web.test.mjs`：审计面板的同源 HTTP API（列表、概览、写作清单、历史、diff、版本图、跨论文对比、watches、导出、恢复、分叉、阶段/简报/状态更新、startTurn、写路径校验）。
 - `test/client.test.mjs`：右栏页面注册、初始渲染、版本图渲染、概览图表/流程渲染、论文家谱/演化树渲染、版本行内联 diff 渲染（React 模块加载契约）。
 
 ### 目录
@@ -506,6 +509,7 @@ test/                 # node:test 测试
 4. 更丰富的右栏 UI：分叉表单、批量发布、发布审批。
 5. 跨进程文件锁与发布审批流。
 6. 模板库（期刊/会议/学位论文）与投稿元数据。
+7. Word 关闭检测、批注/修订痕迹提取，以及 pending 持久化，避免进程重启丢保存。
 
 ## License
 
