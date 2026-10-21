@@ -128,6 +128,8 @@ test("plugin registers tools, guard, command, skill and prompt section", async (
     "paper_new",
     "paper_read",
     "paper_restore",
+    "paper_sync_docx",
+    "paper_unwatch_docx",
     "paper_write",
   ]);
   assert.equal(guards.length, 1);

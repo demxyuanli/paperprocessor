@@ -47,7 +47,7 @@ test("watch imports a saved DOCX without an export/import loop", async (t) => {
   const file = path.join(root, "watched-v000001.docx");
   await makeDocx(file, "First Word save.");
   const manager = new DocxWatchManager({ logger: null, intervalMs: 60000, stableMs: 0 });
-  const watch = await manager.start({ store, docId: "watched", filePath: file, baseVersion: 1 });
+  const watch = await manager.start({ store, docId: "watched", filePath: file, baseVersion: 1, syncMode: "immediate" });
   t.after(() => manager.stopAll());
 
   assert.equal(watch.status, "watching");
@@ -75,7 +75,7 @@ test("watch records a conflict instead of overwriting a newer source", async (t)
   const file = path.join(root, "watched-v000001.docx");
   await makeDocx(file, "Stale Word save.");
   const manager = new DocxWatchManager({ logger: null, intervalMs: 60000, stableMs: 0 });
-  const watch = await manager.start({ store, docId: "watched", filePath: file, baseVersion: 1 });
+  const watch = await manager.start({ store, docId: "watched", filePath: file, baseVersion: 1, syncMode: "immediate" });
   t.after(() => manager.stopAll());
 
   await store.write({ docId: "watched", content: BODY + "\n## 2 New\n\nNewer source.\n", message: "advance source" });
@@ -87,4 +87,67 @@ test("watch records a conflict instead of overwriting a newer source", async (t)
   assert.equal(current.version, 2);
   assert.match(current.body, /Newer source\./);
   assert.doesNotMatch(current.body, /Conflicting Word save\./);
+});
+
+test("frequent saves stay pending and coalesce into one manual checkpoint", async (t) => {
+  const { root, store } = await workspace();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await store.create({ docId: "watched", title: "Watched Paper", content: BODY, message: "init" });
+  const file = path.join(root, "watched-v000001.docx");
+  await makeDocx(file, "Save one.");
+  const manager = new DocxWatchManager({ logger: null, intervalMs: 60000, stableMs: 0 });
+  const watch = await manager.start({ store, docId: "watched", filePath: file, baseVersion: 1, syncMode: "manual" });
+  t.after(() => manager.stopAll());
+
+  await makeDocx(file, "Save two.");
+  const first = await manager.pollOnce(watch.id);
+  assert.equal(first.status, "pending");
+  assert.equal(first.pending, true);
+  assert.equal((await store.read({ docId: "watched" })).version, 1);
+
+  await makeDocx(file, "Save three.");
+  const second = await manager.pollOnce(watch.id);
+  assert.equal(second.status, "pending");
+  assert.equal((await store.read({ docId: "watched" })).version, 1);
+
+  const synced = await manager.sync(watch.id, { message: "Checkpoint after editing" });
+  assert.equal(synced.pending, false);
+  assert.equal(synced.lastVersion, 2);
+  const after = await store.read({ docId: "watched" });
+  assert.equal(after.version, 2);
+  assert.match(after.body, /Save three\./);
+  assert.doesNotMatch(after.body, /Save two\./);
+});
+
+test("a Word save that lands during import stays pending", async (t) => {
+  const { root, store } = await workspace();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await store.create({ docId: "watched", title: "Watched Paper", content: BODY, message: "init" });
+  const file = path.join(root, "watched-v000001.docx");
+  await makeDocx(file, "Save during import A.");
+  const manager = new DocxWatchManager({ logger: null, intervalMs: 60000, stableMs: 0 });
+  const watch = await manager.start({ store, docId: "watched", filePath: file, baseVersion: 1, syncMode: "manual" });
+  t.after(() => manager.stopAll());
+
+  await makeDocx(file, "Save before import.");
+  const pending = await manager.pollOnce(watch.id);
+  assert.equal(pending.status, "pending");
+
+  const original = store.importDocx.bind(store);
+  store.importDocx = async (args) => {
+    const result = await original(args);
+    await makeDocx(file, "Save during import B.");
+    return result;
+  };
+  const first = await manager.sync(watch.id);
+  assert.equal(first.lastVersion, 2);
+  assert.equal(first.pending, false);
+
+  const second = await manager.pollOnce(watch.id);
+  assert.equal(second.status, "pending");
+  assert.equal((await store.read({ docId: "watched" })).version, 2);
+
+  const third = await manager.sync(watch.id);
+  assert.equal(third.lastVersion, 3);
+  assert.match((await store.read({ docId: "watched" })).body, /Save during import B\./);
 });

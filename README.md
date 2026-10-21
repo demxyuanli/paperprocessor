@@ -59,6 +59,7 @@ DeepSeek Harness 的论文写作插件：**Markdown 单一真源 + 强制版本�
 /paper history <doc>   查看版本历史
 /paper check <doc>     写作阶段、字数与清单
 /paper export <doc>    导出最新版本（默认三种格式）
+/paper sync <doc>      把 Word watch 的待同步保存立即写成版本
 ~~~
 
 ## 目录结构
@@ -136,7 +137,8 @@ exports/
 | `paper_diff` | 两个版本正文的 unified diff；`includeFrontMatter:true` 时包含元数据 |
 | `paper_restore` | 把旧版本恢复为新版本 |
 | `paper_branch` | 从一个论文/版本分化出 1..N 篇独立论文 |
-| `paper_export` | 导出 HTML/DOCX/PDF，产物绑定版本；`watch:true` 可监听 DOCX 并自动回写 |
+| `paper_export` | 导出 HTML/DOCX/PDF，产物绑定版本；`watch:true` 监听 DOCX，默认空闲 5 分钟后合并提交 |
+| `paper_sync_docx` | 立即把 watch 的待同步 Word 保存写成版本；`manual` 模式的检查点 |
 | `paper_import_docx` | 把编辑过的 Word 转回 Markdown，预览 diff 后写成 `docx_import` 新版本 |
 
 ### 写入示例
@@ -224,11 +226,29 @@ Markdown 仍是唯一真源，DOCX 是派生产物。需要拿 Word 改内容时
 { "docId": "rag-survey", "formats": ["docx"], "watch": true }
 ```
 
-- 返回的 `watch` 对象包含 `id`、`filePath`、`status`、`lastVersion`。
-- 在 Word 里编辑并保存后，文件稳定约 1.5 秒，插件自动转换并提交一个 `source:"docx_import"` 新版本。
-- 每次保存只提交一次；内容没变不会产生空版本。
+- 返回的 `watch` 对象包含 `id`、`filePath`、`status`、`syncMode`、`pending`、`lastVersion`。
+- Word 频繁保存不会每次都建版本：保存只会把文件标记为 `pending`。
+- 默认 `watchSync:"idle"`、`watchIdleSeconds:300`：最后一次保存后安静 5 分钟，才合并成一个 `source:"docx_import"` 版本。
+- `watchSync:"manual"`：只在你调用 `paper_sync_docx` 或执行 `/paper sync <doc>` 时提交。
+- `watchSync:"immediate"`：保存后立即提交，适合确实想逐次留痕的场景。
+- 内容没变不会产生空版本；待同步状态可通过 `pending` / `pendingForMs` 查看。
 - 如果论文在 DOCX 打开期间又前进了，watch 会停在 `conflict`，不会覆盖新内容；重新导出并重新 watch 即可。
 - 自动回写不会反过来重写 DOCX，因此不会形成导出/导入循环。
+- 关闭 Word 前如果还没到 idle 窗口，先执行 `/paper sync <doc>`；pending 只存在内存里，DSH 重启会丢失未同步的保存。
+
+如果想把版本节奏完全握在自己手里：
+
+```json
+{ "docId": "rag-survey", "formats": ["docx"], "watch": true, "watchSync": "manual" }
+```
+
+编辑完一批内容后执行：
+
+```text
+/paper sync rag-survey
+```
+
+或让 agent 调用 `paper_sync_docx({ docId: "rag-survey" })`。这样一天可以只产生一个或几个检查点，而不是每次 Ctrl+S 都产生版本。
 
 注意：`exports/<docId>/<versionId>/` 是发布产物，直接改它会破坏 manifest 的版本绑定。建议把 DOCX 复制到 `papers/<docId>/work/` 后再编辑，或只把发布产物当只读快照。
 
@@ -451,7 +471,7 @@ npm test
 - `test/store.test.mjs`：创建、无变化写入、编辑、diff、恢复、分叉血缘、版本图、跨论文对比、概览统计、状态流转、写作简报/阶段/清单、外部改动采纳。
 - `test/export.test.mjs`：HTML/DOCX/PDF 产物、manifest、历史版本与分支论文导出（含资产复制/内嵌）。
 - `test/import.test.mjs`：Word→Markdown 预览、确认、基础版本冲突与 force 回写。
-- `test/watch.test.mjs`：DOCX 监听、保存后自动导入、冲突不覆盖。
+- `test/watch.test.mjs`：DOCX 监听、频繁保存合并、手动检查点、冲突不覆盖。
 - `test/integration.test.mjs`：插件注册、工具输出 schema、守卫、命令、skill、系统提示词、Word 导入工具。
 - `test/web.test.mjs`：审计面板的同源 HTTP API（列表、概览、写作清单、历史、diff、版本图、跨论文对比、导出、恢复、分叉、阶段/简报/状态更新、startTurn、写路径校验）。
 - `test/client.test.mjs`：右栏页面注册、初始渲染、版本图渲染、概览图表/流程渲染、论文家谱/演化树渲染、版本行内联 diff 渲染（React 模块加载契约）。
@@ -465,7 +485,7 @@ lib/markdown.js       # 章节树、选择器、分叉内容生成
 lib/frontmatter.js    # YAML front matter
 lib/draft.js          # 写作阶段与清单评分
 lib/import/docx.js    # Word→Markdown 回写转换（mammoth + turndown）
-lib/watch.js          # 监听 DOCX 保存，自动回写为 docx_import 版本
+lib/watch.js          # 监听 DOCX 保存，按 idle/manual 策略合并为 docx_import 版本
 lib/tools.js          # paper_* 工具定义
 lib/guard.js          # 直写守卫
 lib/command.js        # /paper 命令
