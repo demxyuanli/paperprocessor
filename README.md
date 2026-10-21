@@ -136,7 +136,7 @@ exports/
 | `paper_diff` | 两个版本正文的 unified diff；`includeFrontMatter:true` 时包含元数据 |
 | `paper_restore` | 把旧版本恢复为新版本 |
 | `paper_branch` | 从一个论文/版本分化出 1..N 篇独立论文 |
-| `paper_export` | 导出 HTML/DOCX/PDF，产物绑定版本 |
+| `paper_export` | 导出 HTML/DOCX/PDF，产物绑定版本；`watch:true` 可监听 DOCX 并自动回写 |
 | `paper_import_docx` | 把编辑过的 Word 转回 Markdown，预览 diff 后写成 `docx_import` 新版本 |
 
 ### 写入示例
@@ -216,7 +216,23 @@ Markdown 仍是唯一真源，DOCX 是派生产物。需要拿 Word 改内容时
 
 如果论文在导出后又前进过，预览会标记 `conflict`，确认会被拒绝；重新导出最新版再改，或审阅 diff 后用 `force:true`。
 
-限制：Word 批注、修订痕迹、复杂公式、文本框、页眉页脚不会完整转换；导入前必须看 diff。图片会复制到 `papers/<docId>/assets/`。大批量格式调整仍建议在 Markdown/HTML 层完成，Word 只做文字修订。
+#### 自动回写（watch）
+
+如果不想每次手动导入，可以让插件监听导出的 DOCX：
+
+```json
+{ "docId": "rag-survey", "formats": ["docx"], "watch": true }
+```
+
+- 返回的 `watch` 对象包含 `id`、`filePath`、`status`、`lastVersion`。
+- 在 Word 里编辑并保存后，文件稳定约 1.5 秒，插件自动转换并提交一个 `source:"docx_import"` 新版本。
+- 每次保存只提交一次；内容没变不会产生空版本。
+- 如果论文在 DOCX 打开期间又前进了，watch 会停在 `conflict`，不会覆盖新内容；重新导出并重新 watch 即可。
+- 自动回写不会反过来重写 DOCX，因此不会形成导出/导入循环。
+
+注意：`exports/<docId>/<versionId>/` 是发布产物，直接改它会破坏 manifest 的版本绑定。建议把 DOCX 复制到 `papers/<docId>/work/` 后再编辑，或只把发布产物当只读快照。
+
+限制：Word 批注、修订痕迹、复杂公式、文本框、页眉页脚不会完整转换；自动回写前仍建议在版本历史里看 diff。图片会复制到 `papers/<docId>/assets/`。大批量格式调整仍建议在 Markdown/HTML 层完成，Word 只做文字修订。
 
 ### 配置 PDF 浏览器
 
@@ -435,6 +451,7 @@ npm test
 - `test/store.test.mjs`：创建、无变化写入、编辑、diff、恢复、分叉血缘、版本图、跨论文对比、概览统计、状态流转、写作简报/阶段/清单、外部改动采纳。
 - `test/export.test.mjs`：HTML/DOCX/PDF 产物、manifest、历史版本与分支论文导出（含资产复制/内嵌）。
 - `test/import.test.mjs`：Word→Markdown 预览、确认、基础版本冲突与 force 回写。
+- `test/watch.test.mjs`：DOCX 监听、保存后自动导入、冲突不覆盖。
 - `test/integration.test.mjs`：插件注册、工具输出 schema、守卫、命令、skill、系统提示词、Word 导入工具。
 - `test/web.test.mjs`：审计面板的同源 HTTP API（列表、概览、写作清单、历史、diff、版本图、跨论文对比、导出、恢复、分叉、阶段/简报/状态更新、startTurn、写路径校验）。
 - `test/client.test.mjs`：右栏页面注册、初始渲染、版本图渲染、概览图表/流程渲染、论文家谱/演化树渲染、版本行内联 diff 渲染（React 模块加载契约）。
@@ -448,6 +465,7 @@ lib/markdown.js       # 章节树、选择器、分叉内容生成
 lib/frontmatter.js    # YAML front matter
 lib/draft.js          # 写作阶段与清单评分
 lib/import/docx.js    # Word→Markdown 回写转换（mammoth + turndown）
+lib/watch.js          # 监听 DOCX 保存，自动回写为 docx_import 版本
 lib/tools.js          # paper_* 工具定义
 lib/guard.js          # 直写守卫
 lib/command.js        # /paper 命令

@@ -6,6 +6,7 @@ import { registerCommand } from "./lib/command.js";
 import { registerSkill } from "./lib/skill.js";
 import { registerPrompt } from "./lib/prompt.js";
 import { createPaperWebHandler } from "./lib/web.js";
+import { DocxWatchManager } from "./lib/watch.js";
 
 export const name = "paper";
 
@@ -23,6 +24,7 @@ export function apply(ctx, rawConfig) {
     config,
     stores: new Map(),
     startTurnCooldown: new Map(),
+    watchers: new DocxWatchManager({ logger: ctx.logger }),
     createStore(root) {
       return new PaperStore({ root, config, logger: ctx.logger });
     },
@@ -41,6 +43,8 @@ export function apply(ctx, rawConfig) {
   ctx.inject(["commands"], (commandCtx) => registerCommand(commandCtx, state));
   ctx.inject(["skills"], (skillCtx) => registerSkill(skillCtx));
   ctx.inject(["systemPrompt"], (promptCtx) => registerPrompt(promptCtx));
+
+  ctx.effect(() => () => state.watchers.stopAll(), "paper: docx watcher cleanup");
 
   console.log("[dsh-paper] ready; papers under " + config.papersDir + "/<docId>/<docId>.md, exports under " + config.exportsDir + "/");
 }
