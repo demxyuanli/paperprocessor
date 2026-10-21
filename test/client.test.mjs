@@ -267,6 +267,21 @@ test("client renders the overview dashboard with charts and pipeline", async () 
     {},
     null,
     null,
+    [{
+      id: "word-main",
+      docId: "main",
+      filePath: "D:/work/main-v000002.docx",
+      baseVersion: 2,
+      syncMode: "idle",
+      idleMs: 300000,
+      pending: true,
+      pendingForMs: 120000,
+      status: "pending",
+      lastVersion: 2,
+      lastError: "",
+      updatedAt: "2026-01-04T00:00:00.000Z",
+    }],
+    false,
   ];
   const seededReact = fakeReact(seed);
   const seededPlugin = loaded.factory((name) => {
@@ -289,6 +304,11 @@ test("client renders the overview dashboard with charts and pipeline", async () 
   assert.ok(findByClass(tree, "dsp-donut") !== null);
   assert.ok(findByClass(tree, "dsp-activity-row") !== null);
   assert.ok(findByClass(tree, "dsp-view-switch") !== null);
+  assert.ok(findByClass(tree, "dsp-syncbar") !== null);
+  assert.ok(findByClass(tree, "dsp-syncbar-pending") !== null);
+  const syncButton = findByClass(tree, "dsp-syncbar-btn");
+  assert.ok(syncButton !== null);
+  assert.equal(syncButton.props.children, "立即同步");
 });
 test("client renders the paper-level lineage tree", async () => {
   const loaded = await getLoaded();

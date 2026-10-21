@@ -61,6 +61,11 @@ test("web audit API lists, reads, diffs and exports", async (t) => {
   const api = await json(fixture.base, "/paper/api");
   assert.equal(api.body.ok, true);
   assert.ok(api.body.capabilities.includes("export"));
+  assert.ok(api.body.capabilities.includes("syncDocx"));
+
+  const watches = await json(fixture.base, "/paper/watches?session=session-1");
+  assert.equal(watches.body.ok, true);
+  assert.ok(Array.isArray(watches.body.watches));
 
   const list = await json(fixture.base, "/paper/list?session=session-1");
   assert.equal(list.body.ok, true);
