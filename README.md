@@ -13,6 +13,36 @@ DeepSeek Harness 的论文写作插件：**Markdown 单一真源 + 强制版本�
 - 发布产物与具体版本绑定，同一版本可重复导出。
 - 一篇论文可以按章节分叉成多篇独立论文，并记录血缘。
 
+## 界面截图
+
+截图已收录在 [`docs/screenshots/`](docs/screenshots/)，展示右栏“论文审计”面板的主要使用路径。
+
+### 写作总览与论文管理
+
+| 写作总览 | 论文列表 |
+|---|---|
+| [![写作总览](docs/screenshots/02-overview.png)](docs/screenshots/02-overview.png) | [![论文列表](docs/screenshots/03-paper-list.png)](docs/screenshots/03-paper-list.png) |
+| **写作总览**：关键指标、版本活动、阶段分布、写作流程与写作队列。 | **论文列表**：阶段步进器、字数进度、下一步、写作清单与版本操作。 |
+| **写作清单** | **写作简报** |
+| [![写作清单](docs/screenshots/04-checklist.png)](docs/screenshots/04-checklist.png) | [![写作简报](docs/screenshots/05-brief.png)](docs/screenshots/05-brief.png) |
+| **写作清单**：问题、标题、摘要、结构、字数、TODO 与下一步的逐项检查。 | **写作简报**：一句话问题、目标字数、截止日期与下一步可直接编辑。 |
+
+### 版本、分叉与对比
+
+| 演化树 | 版本历史 |
+|---|---|
+| [![演化树](docs/screenshots/06-lineage.png)](docs/screenshots/06-lineage.png) | [![版本历史](docs/screenshots/07-version-history.png)](docs/screenshots/07-version-history.png) |
+| **演化树**：主线、分支、子分支及分叉来源版本。 | **版本历史**：message、source、hash、时间与导出/对比/恢复操作。 |
+| **版本 diff** | **版本图** |
+| [![版本 diff](docs/screenshots/08-diff-previous.png)](docs/screenshots/08-diff-previous.png) | [![版本图](docs/screenshots/09-version-graph.png)](docs/screenshots/09-version-graph.png) |
+| **版本 diff**：在版本行下方内联展开，带新旧行号与 +/- 统计。 | **版本图**：新版本在上、初始版本在下；lane 区分论文与分支。 |
+
+### 导出
+
+[![导出菜单](docs/screenshots/07-export-menu.png)](docs/screenshots/07-export-menu.png)
+
+导出全部、HTML、DOCX、PDF 收进折叠菜单，历史版本也可单独导出。
+
 ## 快速开始
 
 在 DSH 会话里直接对 agent 说：
