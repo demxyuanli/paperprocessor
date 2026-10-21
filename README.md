@@ -221,10 +221,14 @@ Markdown 仍是唯一真源，DOCX 是派生产物。需要拿 Word 改内容时
 
 #### 自动回写（watch）
 
-如果不想每次手动导入，可以让插件监听导出的 DOCX：
+如果不想每次手动导入，可以让插件监听导出的 DOCX。
+
+**右栏操作**：论文卡片 → **导出** → **DOCX + 监听**。这条会以 `watchSync:"manual"` 导出并监听，之后在概览顶部的 Word 同步条点“立即同步”即可。
+
+也可以让 agent 调用：
 
 ```json
-{ "docId": "rag-survey", "formats": ["docx"], "watch": true }
+{ "docId": "rag-survey", "formats": ["docx"], "watch": true, "watchSync": "manual" }
 ```
 
 - 返回的 `watch` 对象包含 `id`、`filePath`、`status`、`syncMode`、`pending`、`lastVersion`。

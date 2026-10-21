@@ -7,6 +7,7 @@ import path from "node:path";
 
 import { createPaperWebHandler } from "../lib/web.js";
 import { PaperStore } from "../lib/store.js";
+import { DocxWatchManager } from "../lib/watch.js";
 import { resolveConfig } from "../lib/config.js";
 
 const BODY = "# Web Paper\n\n## Abstract\n\nAbstract.\n\n## 1 Introduction\n\nIntro.\n";
@@ -35,6 +36,7 @@ async function startServer() {
     config,
     stores: new Map(),
     startTurnCooldown: new Map(),
+    watchers: new DocxWatchManager({ logger: null, intervalMs: 60000, stableMs: 0 }),
     createStore(workspace) { return new PaperStore({ root: workspace, config }); },
   };
   const server = http.createServer(createPaperWebHandler(ctx, state));
@@ -52,6 +54,7 @@ async function json(base, pathname, options) {
 test("web audit API lists, reads, diffs and exports", async (t) => {
   const fixture = await startServer();
   t.after(async () => {
+    fixture.state.watchers.stopAll();
     await new Promise((resolve) => fixture.server.close(resolve));
     await fs.rm(fixture.root, { recursive: true, force: true });
   });
@@ -93,6 +96,16 @@ test("web audit API lists, reads, diffs and exports", async (t) => {
   assert.equal(exported.body.files.length, 1);
   assert.equal(exported.body.files[0].ok, true);
   assert.ok((await fs.stat(exported.body.files[0].path)).size > 1000);
+
+  const watching = await json(fixture.base, "/paper/action", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ sessionId: "session-1", action: { type: "export", docId: "web-paper", formats: ["docx"], watch: true, watchSync: "manual" } }),
+  });
+  assert.equal(watching.body.ok, true);
+  assert.equal(watching.body.watch.status, "watching");
+  assert.equal(watching.body.watch.syncMode, "manual");
+  assert.equal(watching.body.watch.pending, false);
 
   const restored = await json(fixture.base, "/paper/action", {
     method: "POST",
@@ -212,6 +225,7 @@ test("write actions refuse a root that is only the sandbox policy root", async (
     config,
     stores: new Map(),
     startTurnCooldown: new Map(),
+    watchers: new DocxWatchManager({ logger: null, intervalMs: 60000, stableMs: 0 }),
     createStore(workspace) { return new PaperStore({ root: workspace, config }); },
   };
   const server = http.createServer(createPaperWebHandler(ctx, state));
