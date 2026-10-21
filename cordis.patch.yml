@@ -1,0 +1,25 @@
+# dsh-paper bundle layer. The row is inserted into every profile that
+# selects this package (package.json -> dsh.profile.bundles).
+- insert:
+    - id: dsh-paper
+      name: '@local/dsh-paper'
+      config:
+        papersDir: papers
+        exportsDir: exports
+        allowDirectWrites: false
+        autoAdoptExternal: true
+        maxPaperBytes: 4194304
+        maxDiffChars: 120000
+        startTurnCooldownMs: 5000
+        export:
+          html:
+            toc: true
+            numberSections: true
+          docx:
+            toc: true
+            bodyFont: SimSun
+            headingFont: Microsoft YaHei
+            codeFont: Consolas
+          pdf:
+            browserPath: null
+            timeoutMs: 120000

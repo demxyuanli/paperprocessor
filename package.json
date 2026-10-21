@@ -1,0 +1,51 @@
+{
+  "name": "@local/dsh-paper",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness paper-writing plugin: versioned Markdown papers, topic branches, and HTML/DOCX/PDF publication exports",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "index.js",
+    "lib/",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check index.js && node --check lib/web.js && node --check lib/client.js && node --check lib/store.js && node --check lib/markdown.js && node --check lib/tools.js && node --check lib/draft.js && node --check lib/frontmatter.js && node --check lib/skill.js && node --check lib/prompt.js"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
+        "@deepseek-ai/dsh-client-resources"
+      ]
+    }
+  },
+  "dependencies": {
+    "diff": "^9.0.0",
+    "docx": "^9.12.0",
+    "image-size": "^2.0.4",
+    "marked": "^18.1.1",
+    "yaml": "^2.9.1"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": ["dsh", "deepseek-harness", "paper", "markdown", "versioning", "docx", "pdf"],
+  "license": "MIT"
+}
