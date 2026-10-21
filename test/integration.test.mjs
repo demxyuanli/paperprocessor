@@ -4,6 +4,8 @@ import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+import { Document, HeadingLevel, Packer, Paragraph } from "docx";
+
 import { apply } from "../index.js";
 
 const BODY = `# Integration Paper
@@ -121,6 +123,7 @@ test("plugin registers tools, guard, command, skill and prompt section", async (
     "paper_edit",
     "paper_export",
     "paper_history",
+    "paper_import_docx",
     "paper_list",
     "paper_new",
     "paper_read",
@@ -241,4 +244,41 @@ test("plugin registers tools, guard, command, skill and prompt section", async (
   assert.equal(draftCheck.kind, "success");
   assert.match(draftCheck.text, /初稿/);
   assert.match(draftCheck.text, /写作清单|一句话问题/);
+});
+
+test("paper_import_docx previews and commits Word edits", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "dsh-paper-int-docx-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const { ctx, tools } = fakeContext();
+  apply(ctx, { papersDir: "papers", exportsDir: "exports" });
+  const exec = { agent: { session: { header: { cwd: root } } } };
+  await call(tools.get("paper_new"), { docId: "word-paper", title: "Word Paper", content: BODY, message: "init" }, exec);
+
+  const document = new Document({
+    sections: [{
+      children: [
+        new Paragraph({ text: "Word Paper", heading: HeadingLevel.HEADING_1 }),
+        new Paragraph({ text: "## Abstract", heading: HeadingLevel.HEADING_2 }),
+        new Paragraph({ text: "Word edit." }),
+      ],
+    }],
+  });
+  const file = path.join(root, "word-paper-v000001.docx");
+  await fs.writeFile(file, await Packer.toBuffer(document));
+
+  const preview = await call(tools.get("paper_import_docx"), { docId: "word-paper", path: file, confirm: false }, exec);
+  assert.equal(preview.preview, true);
+  assert.equal(preview.baseVersion, 1);
+  assert.equal(preview.version, 0);
+  assert.match(preview.patch, /\+Word edit\./);
+
+  const confirmed = await call(tools.get("paper_import_docx"), {
+    docId: "word-paper",
+    path: file,
+    confirm: true,
+    message: "Import Word edits",
+  }, exec);
+  assert.equal(confirmed.preview, false);
+  assert.equal(confirmed.version, 2);
+  assert.equal(confirmed.versionId, "v000002");
 });

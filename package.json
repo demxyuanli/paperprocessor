@@ -20,7 +20,7 @@
   ],
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "check": "node --check index.js && node --check lib/web.js && node --check lib/client.js && node --check lib/store.js && node --check lib/markdown.js && node --check lib/tools.js && node --check lib/draft.js && node --check lib/frontmatter.js && node --check lib/skill.js && node --check lib/prompt.js"
+    "check": "node --check index.js && node --check lib/web.js && node --check lib/client.js && node --check lib/store.js && node --check lib/markdown.js && node --check lib/tools.js && node --check lib/draft.js && node --check lib/frontmatter.js && node --check lib/skill.js && node --check lib/prompt.js && node --check lib/command.js && node --check lib/import/docx.js && node --check lib/export/docx.js && node --check lib/docx-marker.js"
   },
   "dsh": {
     "bundle": {
@@ -40,12 +40,23 @@
     "diff": "^9.0.0",
     "docx": "^9.12.0",
     "image-size": "^2.0.4",
+    "mammoth": "^1.13.0",
     "marked": "^18.1.1",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2",
     "yaml": "^2.9.1"
   },
   "engines": {
     "node": ">=20"
   },
-  "keywords": ["dsh", "deepseek-harness", "paper", "markdown", "versioning", "docx", "pdf"],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "paper",
+    "markdown",
+    "versioning",
+    "docx",
+    "pdf"
+  ],
   "license": "MIT"
 }

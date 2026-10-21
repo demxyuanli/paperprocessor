@@ -137,6 +137,7 @@ exports/
 | `paper_restore` | 把旧版本恢复为新版本 |
 | `paper_branch` | 从一个论文/版本分化出 1..N 篇独立论文 |
 | `paper_export` | 导出 HTML/DOCX/PDF，产物绑定版本 |
+| `paper_import_docx` | 把编辑过的 Word 转回 Markdown，预览 diff 后写成 `docx_import` 新版本 |
 
 ### 写入示例
 
@@ -193,6 +194,29 @@ exports/
 - `manifest.json` 记录源版本 hash、生成时间、每个产物的成功/失败。
 - PDF 找不到浏览器时，HTML 与 DOCX 仍会成功，PDF 会在 `files` 里报告失败原因，不会让整个导出失败。
 - 图片按 Markdown 相对路径读取；HTML/PDF 会内嵌，DOCX 会嵌入原图。
+
+### 在 Word 里修改（回写）
+
+Markdown 仍是唯一真源，DOCX 是派生产物。需要拿 Word 改内容时，不要让 Word 文件变成第二个源，而是把它当作一次“回写”：
+
+1. 导出目标版本的 DOCX：
+   ```json
+   { "docId": "rag-survey", "formats": ["docx"] }
+   ```
+2. 在 Word 里编辑并保存；文件名里的 `v000123` 会作为 `baseVersion`。
+3. 先预览，不写版本：
+   ```json
+   { "docId": "rag-survey", "path": "D:/papers/rag-survey-v000123.docx", "confirm": false }
+   ```
+4. 检查返回的 `patch`、`warnings`、`images` 后确认：
+   ```json
+   { "docId": "rag-survey", "path": "D:/papers/rag-survey-v000123.docx", "confirm": true, "message": "Import Word edits: tighten Section 3" }
+   ```
+5. 导入会生成 `source:"docx_import"` 的新版本；原 DOCX 保留为外部副本，历史仍只追加。
+
+如果论文在导出后又前进过，预览会标记 `conflict`，确认会被拒绝；重新导出最新版再改，或审阅 diff 后用 `force:true`。
+
+限制：Word 批注、修订痕迹、复杂公式、文本框、页眉页脚不会完整转换；导入前必须看 diff。图片会复制到 `papers/<docId>/assets/`。大批量格式调整仍建议在 Markdown/HTML 层完成，Word 只做文字修订。
 
 ### 配置 PDF 浏览器
 
@@ -396,6 +420,7 @@ updatedAt: 2026-10-19T00:00:00.000Z
 - 版本库写入是进程内串行锁；多进程同时写同一套 `papers/` 不安全。
 - DOCX 目录是静态列表（无页码）；HTML/PDF 目录是链接。Word 中如需页码目录，可在 Word 里插入自动目录域。
 - PDF 样式来自 HTML，和 DOCX 的排版不会逐像素一致。
+- Word 回写只保证标题/段落/列表/基础表格/图片的基本转换；批注、修订痕迹、复杂公式、文本框、页眉页脚不会完整保留，导入前必须看 preview diff。
 
 ## 开发
 
@@ -409,7 +434,8 @@ npm test
 - `test/markdown.test.mjs`：front matter、章节解析、选择器、分叉内容。
 - `test/store.test.mjs`：创建、无变化写入、编辑、diff、恢复、分叉血缘、版本图、跨论文对比、概览统计、状态流转、写作简报/阶段/清单、外部改动采纳。
 - `test/export.test.mjs`：HTML/DOCX/PDF 产物、manifest、历史版本与分支论文导出（含资产复制/内嵌）。
-- `test/integration.test.mjs`：插件注册、工具输出 schema、守卫、命令、skill、系统提示词。
+- `test/import.test.mjs`：Word→Markdown 预览、确认、基础版本冲突与 force 回写。
+- `test/integration.test.mjs`：插件注册、工具输出 schema、守卫、命令、skill、系统提示词、Word 导入工具。
 - `test/web.test.mjs`：审计面板的同源 HTTP API（列表、概览、写作清单、历史、diff、版本图、跨论文对比、导出、恢复、分叉、阶段/简报/状态更新、startTurn、写路径校验）。
 - `test/client.test.mjs`：右栏页面注册、初始渲染、版本图渲染、概览图表/流程渲染、论文家谱/演化树渲染、版本行内联 diff 渲染（React 模块加载契约）。
 
@@ -421,6 +447,7 @@ lib/store.js          # 版本库：registry、history、commit、branch、resto
 lib/markdown.js       # 章节树、选择器、分叉内容生成
 lib/frontmatter.js    # YAML front matter
 lib/draft.js          # 写作阶段与清单评分
+lib/import/docx.js    # Word→Markdown 回写转换（mammoth + turndown）
 lib/tools.js          # paper_* 工具定义
 lib/guard.js          # 直写守卫
 lib/command.js        # /paper 命令
