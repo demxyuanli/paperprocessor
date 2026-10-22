@@ -20,7 +20,7 @@
   ],
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "check": "node --check index.js && node --check lib/web.js && node --check lib/client.js && node --check lib/store.js && node --check lib/markdown.js && node --check lib/tools.js && node --check lib/draft.js && node --check lib/frontmatter.js && node --check lib/skill.js && node --check lib/prompt.js && node --check lib/command.js && node --check lib/import/docx.js && node --check lib/export/docx.js && node --check lib/docx-marker.js && node --check lib/watch.js"
+    "check": "node --check index.js && node --check lib/web.js && node --check lib/client.js && node --check lib/store.js && node --check lib/markdown.js && node --check lib/tools.js && node --check lib/draft.js && node --check lib/frontmatter.js && node --check lib/skill.js && node --check lib/prompt.js && node --check lib/command.js && node --check lib/import/docx.js && node --check lib/export/docx.js && node --check lib/docx-marker.js && node --check lib/watch.js && node --check lib/util.js"
   },
   "dsh": {
     "bundle": {

@@ -221,7 +221,7 @@ Markdown 仍是唯一真源，DOCX 是派生产物。需要拿 Word 改内容时
 
 #### 自动回写（watch）
 
-如果不想每次手动导入，可以让插件监听导出的 DOCX。
+如果不想每次手动导入，可以让插件监听 DOCX。开启 watch 时，插件会把导出的 DOCX 复制到 `papers/<docId>/work/`，监听这份工作副本；`exports/` 保持只读。
 
 **右栏操作**：论文卡片 → **导出** → **DOCX + 监听**。这条会以 `watchSync:"manual"` 导出并监听；之后在概览顶部的 Word 同步条点 **打开** 编辑 DOCX，点 **立即同步** 提交检查点。
 
@@ -231,7 +231,7 @@ Markdown 仍是唯一真源，DOCX 是派生产物。需要拿 Word 改内容时
 { "docId": "rag-survey", "formats": ["docx"], "watch": true, "watchSync": "manual" }
 ```
 
-- 返回的 `watch` 对象包含 `id`、`filePath`、`status`、`syncMode`、`pending`、`lastVersion`。
+- 返回的 `watch` 对象包含 `id`、`filePath`、`status`、`syncMode`、`pending`、`lastVersion`；`filePath` 是 `papers/<docId>/work/<docId>-<versionId>.docx`，不是发布产物。
 - Word 频繁保存不会每次都建版本：保存只会把文件标记为 `pending`。
 - 默认 `watchSync:"idle"`、`watchIdleSeconds:300`：最后一次保存后安静 5 分钟，才合并成一个 `source:"docx_import"` 版本。
 - `watchSync:"manual"`：只在你调用 `paper_sync_docx` 或执行 `/paper sync <doc>` 时提交。
@@ -256,7 +256,7 @@ Markdown 仍是唯一真源，DOCX 是派生产物。需要拿 Word 改内容时
 
 或让 agent 调用 `paper_sync_docx({ docId: "rag-survey" })`。这样一天可以只产生一个或几个检查点，而不是每次 Ctrl+S 都产生版本。
 
-注意：`exports/<docId>/<versionId>/` 是发布产物，直接改它会破坏 manifest 的版本绑定。建议把 DOCX 复制到 `papers/<docId>/work/` 后再编辑，或只把发布产物当只读快照。
+注意：`exports/<docId>/<versionId>/` 仍是发布产物，watch 不会修改它；编辑 `papers/<docId>/work/` 里的工作副本。若手动导入外部 DOCX，仍需自己保证基础版本。
 
 限制：Word 批注、修订痕迹、复杂公式、文本框、页眉页脚不会完整转换；自动回写前仍建议在版本历史里看 diff。图片会复制到 `papers/<docId>/assets/`。大批量格式调整仍建议在 Markdown/HTML 层完成，Word 只做文字修订。
 
@@ -481,7 +481,8 @@ npm test
 - `test/store.test.mjs`：创建、无变化写入、编辑、diff、恢复、分叉血缘、版本图、跨论文对比、概览统计、状态流转、写作简报/阶段/清单、外部改动采纳。
 - `test/export.test.mjs`：HTML/DOCX/PDF 产物、manifest、历史版本与分支论文导出（含资产复制/内嵌）。
 - `test/import.test.mjs`：Word→Markdown 预览、确认、基础版本冲突与 force 回写。
-- `test/watch.test.mjs`：DOCX 监听、频繁保存合并、手动检查点、冲突不覆盖。
+- `test/watch.test.mjs`：DOCX 监听、频繁保存合并、手动检查点、冲突不覆盖、pending 重导出保护。
+- `test/util.test.mjs`：原子写入与中断 rename 的 backup 恢复。
 - `test/integration.test.mjs`：插件注册、工具输出 schema、守卫、命令、skill、系统提示词、Word 导入工具。
 - `test/web.test.mjs`：审计面板的同源 HTTP API（列表、概览、写作清单、历史、diff、版本图、跨论文对比、watches、导出、恢复、分叉、阶段/简报/状态更新、startTurn、写路径校验）。
 - `test/client.test.mjs`：右栏页面注册、初始渲染、版本图渲染、概览图表/流程渲染、论文家谱/演化树渲染、版本行内联 diff 渲染（React 模块加载契约）。
@@ -496,6 +497,7 @@ lib/frontmatter.js    # YAML front matter
 lib/draft.js          # 写作阶段与清单评分
 lib/import/docx.js    # Word→Markdown 回写转换（mammoth + turndown）
 lib/watch.js          # 监听 DOCX 保存，按 idle/manual 策略合并为 docx_import 版本
+lib/util.js           # 原子写入、backup 恢复与路径/哈希工具
 lib/tools.js          # paper_* 工具定义
 lib/guard.js          # 直写守卫
 lib/command.js        # /paper 命令

@@ -106,6 +106,9 @@ test("web audit API lists, reads, diffs and exports", async (t) => {
   assert.equal(watching.body.watch.status, "watching");
   assert.equal(watching.body.watch.syncMode, "manual");
   assert.equal(watching.body.watch.pending, false);
+  assert.match(watching.body.watch.filePath, /[\\/]papers[\\/]web-paper[\\/]work[\\/]/);
+  assert.ok(!watching.body.watch.filePath.includes("exports"));
+  await fs.access(watching.body.watch.filePath);
 
   const restored = await json(fixture.base, "/paper/action", {
     method: "POST",
