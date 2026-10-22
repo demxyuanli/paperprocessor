@@ -255,6 +255,11 @@ test("paper_import_docx previews and commits Word edits", async (t) => {
   apply(ctx, { papersDir: "papers", exportsDir: "exports" });
   const exec = { agent: { session: { header: { cwd: root } } } };
   await call(tools.get("paper_new"), { docId: "word-paper", title: "Word Paper", content: BODY, message: "init" }, exec);
+  await assert.rejects(
+    call(tools.get("paper_export"), { docId: "word-paper", formats: ["html"], watch: true }, exec),
+    /docx/
+  );
+  await assert.rejects(fs.access(path.join(root, "exports", "word-paper")), /ENOENT/);
 
   const document = new Document({
     sections: [{

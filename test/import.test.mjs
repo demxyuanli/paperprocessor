@@ -60,6 +60,7 @@ test("preview then confirm imports Word edits as a new docx_import version", asy
   assert.ok(preview.warnings.some((warning) => warning.includes("批注")));
   const before = await store.read({ docId: "paper" });
   assert.equal(before.version, 1);
+  await assert.rejects(fs.access(path.join(root, "papers", "paper", "assets")), /ENOENT/);
 
   const confirmed = await store.importDocx({
     docId: "paper",
@@ -116,4 +117,35 @@ test("confirm refuses a Word file based on an older version unless forced", asyn
   );
   const forced = await store.importDocx({ docId: "paper", filePath: file, confirm: true, force: true, message: "Force import" });
   assert.equal(forced.version, 3);
+});
+
+test("rejects a DOCX larger than maxDocxBytes", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "dsh-paper-import-limit-"));
+  const store = new PaperStore({ root, config: resolveConfig({ maxDocxBytes: 10 }) });
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await store.create({ docId: "paper", title: "Word Roundtrip", content: BODY, message: "init" });
+  const file = path.join(root, "paper-v000001.docx");
+  await makeDocx(file, "Too large.");
+  await assert.rejects(
+    store.importDocx({ docId: "paper", filePath: file, confirm: false }),
+    /maxDocxBytes/
+  );
+});
+
+test("an unversioned Word filename requires force before overwriting", async (t) => {
+  const { root, store } = await workspace();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await store.create({ docId: "paper", title: "Word Roundtrip", content: BODY, message: "init" });
+  const file = path.join(root, "edited.docx");
+  await makeDocx(file, "Renamed Word edit.");
+
+  const preview = await store.importDocx({ docId: "paper", filePath: file, confirm: false });
+  assert.equal(preview.baseVersion, null);
+  assert.equal(preview.conflict, true);
+  await assert.rejects(
+    store.importDocx({ docId: "paper", filePath: file, confirm: true }),
+    /cannot infer|force/i
+  );
+  const forced = await store.importDocx({ docId: "paper", filePath: file, confirm: true, force: true, message: "Force renamed import" });
+  assert.equal(forced.version, 2);
 });

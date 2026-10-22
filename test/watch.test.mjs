@@ -119,6 +119,42 @@ test("frequent saves stay pending and coalesce into one manual checkpoint", asyn
   assert.doesNotMatch(after.body, /Save two\./);
 });
 
+test("manual sync reads a save that polling has not seen yet", async (t) => {
+  const { root, store } = await workspace();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await store.create({ docId: "watched", title: "Watched Paper", content: BODY, message: "init" });
+  const file = path.join(root, "watched-v000001.docx");
+  await makeDocx(file, "Initial save.");
+  const manager = new DocxWatchManager({ logger: null, intervalMs: 60000, stableMs: 0 });
+  const watch = await manager.start({ store, docId: "watched", filePath: file, baseVersion: 1, syncMode: "manual" });
+  t.after(() => manager.stopAll());
+
+  await makeDocx(file, "Immediate sync save.");
+  const synced = await manager.sync(watch.id);
+  assert.equal(synced.pending, false);
+  assert.equal(synced.lastVersion, 2);
+  const after = await store.read({ docId: "watched" });
+  assert.equal(after.version, 2);
+  assert.match(after.body, /Immediate sync save\./);
+});
+
+test("starting a watch refuses to discard pending Word edits", async (t) => {
+  const { root, store } = await workspace();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await store.create({ docId: "watched", title: "Watched Paper", content: BODY, message: "init" });
+  const file = path.join(root, "watched-v000001.docx");
+  await makeDocx(file, "Initial save.");
+  const manager = new DocxWatchManager({ logger: null, intervalMs: 60000, stableMs: 0 });
+  const watch = await manager.start({ store, docId: "watched", filePath: file, baseVersion: 1, syncMode: "manual" });
+  t.after(() => manager.stopAll());
+  await makeDocx(file, "Pending save.");
+  await manager.pollOnce(watch.id);
+  await assert.rejects(
+    manager.start({ store, docId: "watched", filePath: file, baseVersion: 1, syncMode: "manual" }),
+    /pending/i
+  );
+});
+
 test("a Word save that lands during import stays pending", async (t) => {
   const { root, store } = await workspace();
   t.after(() => fs.rm(root, { recursive: true, force: true }));

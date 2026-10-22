@@ -7,6 +7,7 @@ import path from "node:path";
 import { PaperStore } from "../lib/store.js";
 import { resolveConfig } from "../lib/config.js";
 import { exportPaper } from "../lib/export/index.js";
+import { renderHtml } from "../lib/export/html.js";
 import { findBrowser } from "../lib/export/pdf.js";
 
 const BODY = `# Export Paper
@@ -146,4 +147,18 @@ test("exports a historical version without changing the source", async (t) => {
   assert.match(html, /Results\./);
   const current = await store.read({ docId: "export-paper" });
   assert.match(current.body, /Results after revision/);
+});
+
+test("malformed image URLs warn instead of failing the whole export", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "dsh-paper-uri-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const rendered = await renderHtml({
+    docId: "uri-paper",
+    versionMeta: { id: "v000001", createdAt: "2026-01-01T00:00:00.000Z" },
+    content: "# URI Paper\n\n![bad](bad%ZZ.png)\n",
+    root,
+    baseDir: root,
+    config: resolveConfig({}).export,
+  });
+  assert.ok(rendered.warnings.some((warning) => warning.includes("percent-encoding")));
 });

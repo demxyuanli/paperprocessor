@@ -217,7 +217,7 @@ Markdown 仍是唯一真源，DOCX 是派生产物。需要拿 Word 改内容时
    ```
 5. 导入会生成 `source:"docx_import"` 的新版本；原 DOCX 保留为外部副本，历史仍只追加。
 
-如果论文在导出后又前进过，预览会标记 `conflict`，确认会被拒绝；重新导出最新版再改，或审阅 diff 后用 `force:true`。
+如果论文在导出后又前进过，或文件名里没有 `v000123` 可供推断基础版本，预览会标记 `conflict`，确认会被拒绝；重新导出最新版再改，或审阅 diff 后用 `force:true`。
 
 #### 自动回写（watch）
 
@@ -235,6 +235,7 @@ Markdown 仍是唯一真源，DOCX 是派生产物。需要拿 Word 改内容时
 - Word 频繁保存不会每次都建版本：保存只会把文件标记为 `pending`。
 - 默认 `watchSync:"idle"`、`watchIdleSeconds:300`：最后一次保存后安静 5 分钟，才合并成一个 `source:"docx_import"` 版本。
 - `watchSync:"manual"`：只在你调用 `paper_sync_docx` 或执行 `/paper sync <doc>` 时提交。
+- pending 时重新导出同一版本的 DOCX 会被拒绝；先 sync，避免覆盖未同步的 Word 修改。
 - `watchSync:"immediate"`：保存后立即提交，适合确实想逐次留痕的场景。
 - 内容没变不会产生空版本；待同步状态可通过 `pending` / `pendingForMs` 查看。
 - 如果论文在 DOCX 打开期间又前进了，watch 会停在 `conflict`，不会覆盖新内容；重新导出并重新 watch 即可。
@@ -294,6 +295,7 @@ dsh plugin --profile <name> add D:/source/repos/paperharness
 | `allowDirectWrites` | `false` | 是否允许绕过 paper_* 工具直写 |
 | `autoAdoptExternal` | `true` | 外部改动是否自动采纳为新版本 |
 | `maxPaperBytes` | 4 MiB | 单篇 Markdown 大小上限 |
+| `maxDocxBytes` | 50 MiB | 可导入 Word 文件大小上限 |
 | `maxDiffChars` | 120000 | diff 输出截断长度 |
 | `startTurnCooldownMs` | 5000 | 面板“让 Agent 审阅”的重复提交冷却 |
 | `export.html.toc` | `true` | HTML 是否生成目录 |
