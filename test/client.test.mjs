@@ -197,6 +197,19 @@ test("client renders the version graph for a paper family", async () => {
     {},
     null,
     null,
+    [],
+    false,
+    {
+      docId: "main",
+      versionId: "v000002",
+      dir: "D:/work/exports/main/v000002",
+      files: [
+        { format: "html", path: "D:/work/exports/main/v000002/main-v000002.html" },
+        { format: "docx", path: "D:/work/exports/main/v000002/main-v000002.docx" },
+      ],
+      watchPath: "D:/work/papers/main/work/main-v000002.docx",
+      failed: 0,
+    },
   ];
   const seededReact = fakeReact(seed);
   const seededPlugin = loaded.factory((name) => {
@@ -221,6 +234,9 @@ test("client renders the version graph for a paper family", async () => {
   const firstGraphRow = findByClass(tree, "dsp-graph-row");
   const firstGraphDoc = findByClass(firstGraphRow, "dsp-graph-doc");
   assert.equal(firstGraphDoc.props.children, "branch");
+  assert.ok(findByClass(tree, "dsp-export-result") !== null);
+  const exportTitle = findByClass(tree, "dsp-export-result-title");
+  assert.match(exportTitle.props.children, /v000002/);
 });
 test("client renders the overview dashboard with charts and pipeline", async () => {
   const loaded = await getLoaded();

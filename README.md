@@ -194,6 +194,7 @@ exports/
 | PDF | 本机 Chrome/Edge headless `--print-to-pdf` | A4、打印样式、目录页与正文分页 |
 
 - 产物目录：`exports/<docId>/<versionId>/`，文件名为 `<docId>-<versionId>.html|.docx|.pdf`；同一版本重复导出会覆盖同目录产物，不改变源版本。
+- 导出成功后，论文卡片会显示 **已导出 vXXXXXX** 和 `打开 HTML`、`打开 DOCX`、`打开 PDF` 按钮，直接调用系统默认程序打开，不需要去目录里找；开启 watch 时，Word 按钮打开的是 `papers/<docId>/work/` 工作副本。
 - `manifest.json` 记录源版本 hash、生成时间、每个产物的成功/失败。
 - PDF 找不到浏览器时，HTML 与 DOCX 仍会成功，PDF 会在 `files` 里报告失败原因，不会让整个导出失败。
 - 图片按 Markdown 相对路径读取；HTML/PDF 会内嵌，DOCX 会嵌入原图。
