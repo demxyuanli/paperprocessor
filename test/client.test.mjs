@@ -237,6 +237,7 @@ test("client renders the version graph for a paper family", async () => {
   assert.ok(findByClass(tree, "dsp-export-result") !== null);
   const exportTitle = findByClass(tree, "dsp-export-result-title");
   assert.match(exportTitle.props.children, /v000002/);
+  assert.ok(findByClass(tree, "dsp-status-select") !== null);
 });
 test("client renders the overview dashboard with charts and pipeline", async () => {
   const loaded = await getLoaded();

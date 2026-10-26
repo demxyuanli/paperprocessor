@@ -128,6 +128,7 @@ test("plugin registers tools, guard, command, skill and prompt section", async (
     "paper_new",
     "paper_read",
     "paper_restore",
+    "paper_status",
     "paper_sync_docx",
     "paper_unwatch_docx",
     "paper_write",
@@ -241,6 +242,14 @@ test("plugin registers tools, guard, command, skill and prompt section", async (
   const draftRow = draftList.papers.find((paper) => paper.docId === "draft-work");
   assert.equal(draftRow.stage, "drafting");
   assert.equal(draftRow.nextAction, "write results");
+
+  const published = await call(tools.get("paper_status"), {
+    docId: "draft-work",
+    status: "published",
+    message: "mark published",
+  }, exec);
+  assert.equal(published.status, "published");
+  assert.equal(published.changed, true);
 
   const draftCheck = await commands[0].handler({ rawInput: "check draft-work", agent: { session: { header: { cwd: root } } } });
   assert.equal(draftCheck.kind, "success");

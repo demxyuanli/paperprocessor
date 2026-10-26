@@ -129,6 +129,7 @@ exports/
 | `paper_new` | 新建论文，写入 v000001；可只给 `content`，标题从 H1 推导；可带 `stage/targetWords/question/nextAction` |
 | `paper_list` | 列出论文、当前版本、阶段、字数/目标、清单分、DRIFT、版本数、血缘 |
 | `paper_brief` | 更新写作简报（阶段、问题、目标字数、下一步、截止日期），生成 `paper_brief` 版本 |
+| `paper_status` | 修改发布状态（draft/review/published/archived），生成 `paper_status` 版本 |
 | `paper_check` | “先写出来”写作清单：问题、标题、摘要、结构、字数、TODO、下一步 |
 | `paper_read` | 读当前/历史版本或单节；`brief:true` 只回元数据+目录 |
 | `paper_write` | 整体替换正文，生成新版本 |
@@ -334,6 +335,7 @@ dsh plugin --profile <name> add D:/source/repos/paperharness
 ### 论文
 
 - **阶段步进器**：每张卡片上有 构思 → 提纲 → 初稿 → 修订 → 完成，点击即推进阶段并生成一个新版本；
+- **发布状态**：卡片操作栏的“状态”下拉框可在 草稿 / 审阅 / 已发布 / 归档 间切换，生成 `paper_status` 版本；DOCX 标题页显示这个状态，改成“已发布”后重新导出即可去掉 draft；
 - **字数进度**：显示当前字数 / `targetWords` 和进度条；“下一步”直接显示 `nextAction`，截止日期可见；
 - **写作清单**：`paper_check` 的 7 项建议（问题、标题、摘要、结构、字数、TODO、下一步），可折叠查看；
 - **写作简报**：卡片内可直接编辑问题、目标字数、下一步、截止日期，保存生成 `paper_brief` 版本；
@@ -446,7 +448,7 @@ updatedAt: 2026-10-19T00:00:00.000Z
 - 正文第一个标题是唯一 H1；章节用 H2/H3。
 - 标题可以自带编号（`## 1 引言`），也可以不写编号（导出时 HTML/DOCX 自动编号）。
 - 图片用相对路径；表格用 GFM 表格；公式暂按文本/代码块处理。
-- `status` 是发布生命周期（draft/internal_review/submitted/under_review/published/archived）；`stage` 是写作阶段（idea/outline/drafting/revising/done），两者不要混用。
+- `status` 是发布生命周期（draft / review / published / archived）；`stage` 是写作阶段（idea/outline/drafting/revising/done），两者不要混用。
 - `targetWords`、`question`、`nextAction`、`deadline` 用于“先写出来”模式的进度、清单和下一步；用 `paper_brief` 更新，不需要重写正文。
 
 ## 人与 agent 的入口
