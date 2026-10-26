@@ -116,6 +116,7 @@ test("plugin registers tools, guard, command, skill and prompt section", async (
   const { ctx, tools, guards, commands, skills, sections } = fakeContext();
   apply(ctx, { papersDir: "papers", exportsDir: "exports" });
   assert.deepEqual([...tools.keys()].sort(), [
+    "paper_adopt_external",
     "paper_branch",
     "paper_brief",
     "paper_check",

@@ -111,6 +111,7 @@ exports/
 3. 恢复旧版本用 `paper_restore`，它会生成一个**新版本**，旧版本仍然保留。
 4. 如果 `<docId>.md` 被外部编辑器或 shell 改过，`paper_list` 会显示 `DRIFT`；下一次 `paper_read` / `paper_write` / `paper_export` 会先把外部内容采纳为一个 `external` 版本。
 5. 同一工作区的版本写入在进程内串行化；不要用多个 DSH 进程同时写同一套 `papers/`。
+6. 也可以显式采纳外部改动：论文卡片的 **采纳外部** 按钮，或 `paper_adopt_external({ docId })`；它会把当前 `<docId>.md` 原样提交为 `source:"external"` 版本。状态仍以文件里的 front matter 为准，如果外部文件写的是 `status: draft`，采纳后用状态下拉框或 `paper_status` 改回。
 
 ## 强制版本管理
 
@@ -130,6 +131,7 @@ exports/
 | `paper_list` | 列出论文、当前版本、阶段、字数/目标、清单分、DRIFT、版本数、血缘 |
 | `paper_brief` | 更新写作简报（阶段、问题、目标字数、下一步、截止日期），生成 `paper_brief` 版本 |
 | `paper_status` | 修改发布状态（draft/review/published/archived），生成 `paper_status` 版本 |
+| `paper_adopt_external` | 显式采纳外部手工改过的 `<docId>.md`，生成 `external` 版本 |
 | `paper_check` | “先写出来”写作清单：问题、标题、摘要、结构、字数、TODO、下一步 |
 | `paper_read` | 读当前/历史版本或单节；`brief:true` 只回元数据+目录 |
 | `paper_write` | 整体替换正文，生成新版本 |

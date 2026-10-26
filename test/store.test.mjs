@@ -248,4 +248,10 @@ test("autoAdoptExternal false refuses writes over external changes", async (t) =
   );
   const history = await store.history({ docId: "paper" });
   assert.equal(history.versions.length, 1);
+  const adopted = await store.adoptExternal({ docId: "paper", message: "Adopt manual edit" });
+  assert.equal(adopted.changed, true);
+  assert.equal((await store.history({ docId: "paper" })).versions[0].source, "external");
+  assert.equal((await store.list()).papers[0].drift, false);
+  await store.write({ docId: "paper", content: BODY + "\n## 2 Added\n\nAfter adoption.\n", message: "write after adoption" });
+  assert.equal((await store.history({ docId: "paper" })).versions.length, 3);
 });
